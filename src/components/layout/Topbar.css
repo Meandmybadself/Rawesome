@@ -71,6 +71,20 @@
   gap: var(--spacing-sm);
 }
 
+.topbar__github {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.topbar__github:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+}
+
 .topbar__theme-toggle {
   font-size: 18px;
   padding: var(--spacing-xs);
