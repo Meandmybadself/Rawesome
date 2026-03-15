@@ -134,7 +134,7 @@ function CropControls() {
       <button
         className="reset-btn"
         onClick={() => {
-          setParam('crop', { x: 0, y: 0, width: 1, height: 1, angle: 0 })
+          setParam('crop', { x: 0, y: 0, width: 1, height: 1, angle: 0, quarterTurns: 0 })
           commitSnapshot()
         }}
       >

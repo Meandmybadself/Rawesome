@@ -21,6 +21,7 @@ export interface CropRect {
   width: number
   height: number
   angle: number   // degrees, -45 to +45
+  quarterTurns?: number  // 0-3: number of 90° CW rotations
 }
 
 export const DEFAULT_EDIT_PARAMS: EditParams = {
@@ -35,7 +36,7 @@ export const DEFAULT_EDIT_PARAMS: EditParams = {
   tint: 0,
   vibrance: 0,
   saturation: 0,
-  crop: { x: 0, y: 0, width: 1, height: 1, angle: 0 },
+  crop: { x: 0, y: 0, width: 1, height: 1, angle: 0, quarterTurns: 0 },
 }
 
 // ─── File Registry ────────────────────────────────────────────────────────────
