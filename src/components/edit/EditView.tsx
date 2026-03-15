@@ -15,7 +15,9 @@ export function EditView() {
   const currentFileId = useFileStore((s) => s.currentFileId)
   const catalog = useFileStore((s) => s.catalog)
   const currentEntry = currentFileId ? catalog[currentFileId] : null
-  const isProcessing = useUIStore((s) => s.decodeProgress) !== null || useUIStore((s) => s.exportProgress) !== null
+  const decodeProgress = useUIStore((s) => s.decodeProgress)
+  const exportProgress = useUIStore((s) => s.exportProgress)
+  const isProcessing = decodeProgress !== null || exportProgress !== null
 
   return (
     <div className={`edit-view ${isProcessing ? 'edit-view--processing' : ''}`}>
