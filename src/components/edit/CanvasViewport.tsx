@@ -96,18 +96,19 @@ export function CanvasViewport({ rendererRef }: CanvasViewportProps) {
     if (!containerRef.current || !canvasRef.current || !rendererRef.current || !imageDims) return
 
     const container = containerRef.current.getBoundingClientRect()
-    const imgAspect = imageDims.w / imageDims.h
+    const qt = params.crop.quarterTurns ?? 0
+    const effectiveW = qt % 2 === 1 ? imageDims.h : imageDims.w
+    const effectiveH = qt % 2 === 1 ? imageDims.w : imageDims.h
+    const imgAspect = effectiveW / effectiveH
     const containerAspect = container.width / container.height
 
     let displayW: number
     let displayH: number
 
     if (imgAspect > containerAspect) {
-      // Image is wider than container — fit to width
       displayW = container.width
       displayH = container.width / imgAspect
     } else {
-      // Image is taller than container — fit to height
       displayH = container.height
       displayW = container.height * imgAspect
     }
@@ -116,7 +117,7 @@ export function CanvasViewport({ rendererRef }: CanvasViewportProps) {
     canvasRef.current.style.width = `${Math.round(displayW)}px`
     canvasRef.current.style.height = `${Math.round(displayH)}px`
     rendererRef.current.resize(Math.round(displayW * dpr), Math.round(displayH * dpr))
-  }, [rendererRef, imageDims])
+  }, [rendererRef, imageDims, params.crop.quarterTurns])
 
   // Re-fit on container resize or when image dimensions change
   useEffect(() => {

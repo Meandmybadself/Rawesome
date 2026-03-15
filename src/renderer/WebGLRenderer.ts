@@ -379,6 +379,13 @@ export class WebGLRenderer {
     return rgb
   }
 
+  getEffectiveDims(quarterTurns: number): { w: number; h: number } {
+    if (quarterTurns % 2 === 1) {
+      return { w: this.fullHeight, h: this.fullWidth }
+    }
+    return { w: this.fullWidth, h: this.fullHeight }
+  }
+
   resize(width: number, height: number): void {
     this.canvas.width = width
     this.canvas.height = height
