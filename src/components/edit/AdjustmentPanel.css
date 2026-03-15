@@ -1,0 +1,112 @@
+.adjustment-panel {
+  width: var(--panel-width);
+  height: 100%;
+  background: var(--color-bg-panel);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: var(--z-panel);
+}
+
+.adjustment-panel__tools {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tool-btn {
+  flex: 1;
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.tool-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.tool-btn--active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.adjustment-panel__sliders,
+.adjustment-panel__crop {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.panel-section {
+  margin-bottom: var(--spacing-md);
+}
+
+.panel-section__title {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.wb-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+}
+
+.wb-presets__btn {
+  padding: 2px var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.wb-presets__btn:hover {
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+}
+
+.reset-btn {
+  width: 100%;
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.reset-btn:hover {
+  background: var(--color-danger);
+  color: white;
+  border-color: var(--color-danger);
+}
+
+.done-btn {
+  width: 100%;
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  background: var(--color-accent);
+  color: white;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-sm);
+  transition: background var(--transition-fast);
+}
+
+.done-btn:hover {
+  background: var(--color-accent-hover);
+}

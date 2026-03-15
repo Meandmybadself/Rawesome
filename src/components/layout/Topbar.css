@@ -1,0 +1,83 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--topbar-height);
+  padding: 0 var(--spacing-md);
+  background: var(--color-bg-panel);
+  border-bottom: 1px solid var(--color-border);
+  z-index: var(--z-topbar);
+  user-select: none;
+}
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.topbar__title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: -0.5px;
+}
+
+.topbar__back {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.topbar__back:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.topbar__center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.topbar__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.topbar__progress-bar {
+  width: 120px;
+  height: 4px;
+  background: var(--slider-track-bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.topbar__progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 2px;
+  transition: width 200ms ease;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.topbar__theme-toggle {
+  font-size: 18px;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.topbar__theme-toggle:hover {
+  background: var(--color-bg-hover);
+}

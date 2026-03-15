@@ -1,0 +1,86 @@
+:root[data-theme="dark"] {
+  --color-bg-app:          #1a1a1a;
+  --color-bg-panel:        #242424;
+  --color-bg-panel-raised: #2e2e2e;
+  --color-bg-input:        #1a1a1a;
+  --color-bg-hover:        #333333;
+  --color-bg-overlay:      rgba(0, 0, 0, 0.7);
+
+  --color-border:          #3a3a3a;
+  --color-border-focus:    #6b8cff;
+
+  --color-text-primary:    #e8e8e8;
+  --color-text-secondary:  #a0a0a0;
+  --color-text-disabled:   #555555;
+
+  --color-accent:          #6b8cff;
+  --color-accent-hover:    #7d9bff;
+  --color-accent-active:   #5a7aee;
+
+  --color-danger:          #ff5e5e;
+  --color-success:         #4caf80;
+
+  --slider-track-bg:       #3a3a3a;
+  --slider-track-fill:     #6b8cff;
+  --slider-thumb-bg:       #ffffff;
+}
+
+:root[data-theme="light"] {
+  --color-bg-app:          #f0f0f0;
+  --color-bg-panel:        #ffffff;
+  --color-bg-panel-raised: #f8f8f8;
+  --color-bg-input:        #f0f0f0;
+  --color-bg-hover:        #e8e8e8;
+  --color-bg-overlay:      rgba(0, 0, 0, 0.4);
+
+  --color-border:          #d0d0d0;
+  --color-border-focus:    #4466dd;
+
+  --color-text-primary:    #1a1a1a;
+  --color-text-secondary:  #606060;
+  --color-text-disabled:   #b0b0b0;
+
+  --color-accent:          #4466dd;
+  --color-accent-hover:    #3355cc;
+  --color-accent-active:   #2244bb;
+
+  --color-danger:          #d93535;
+  --color-success:         #3a8c5c;
+
+  --slider-track-bg:       #d0d0d0;
+  --slider-track-fill:     #4466dd;
+  --slider-thumb-bg:       #ffffff;
+}
+
+:root {
+  --panel-width:           280px;
+  --topbar-height:         48px;
+  --thumbnail-size:        200px;
+  --thumbnail-gap:         12px;
+
+  --radius-sm:             4px;
+  --radius-md:             8px;
+  --radius-lg:             12px;
+
+  --spacing-xs:            4px;
+  --spacing-sm:            8px;
+  --spacing-md:            16px;
+  --spacing-lg:            24px;
+
+  --font-size-xs:          11px;
+  --font-size-sm:          12px;
+  --font-size-md:          14px;
+  --font-size-lg:          16px;
+
+  --font-sans:             'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono:             'JetBrains Mono', 'Fira Code', monospace;
+
+  --transition-fast:       120ms ease;
+  --transition-base:       200ms ease;
+
+  --z-canvas:              1;
+  --z-crop-overlay:        2;
+  --z-panel:               10;
+  --z-topbar:              20;
+  --z-modal:               100;
+}

@@ -1,0 +1,45 @@
+.edit-view {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - var(--topbar-height));
+  overflow: hidden;
+}
+
+.edit-view__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-bg-panel-raised);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.edit-view__filename {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edit-view__main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.edit-view__canvas-area {
+  flex: 1;
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.edit-view__sidebar {
+  width: var(--panel-width);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-panel);
+  border-left: 1px solid var(--color-border);
+  overflow: hidden;
+}
