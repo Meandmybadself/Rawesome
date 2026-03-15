@@ -6,6 +6,7 @@ import { AdjustmentPanel } from './AdjustmentPanel'
 import { Histogram } from './Histogram'
 import { ExportPanel } from './ExportPanel'
 import { CropOverlay } from './CropOverlay'
+import { StraightenOverlay } from './StraightenOverlay'
 import './EditView.css'
 
 export function EditView() {
@@ -24,6 +25,7 @@ export function EditView() {
         <div className="edit-view__canvas-area">
           <CanvasViewport rendererRef={rendererRef} />
           <CropOverlay />
+          <StraightenOverlay />
         </div>
         <div className="edit-view__sidebar">
           <Histogram rendererRef={rendererRef} />
