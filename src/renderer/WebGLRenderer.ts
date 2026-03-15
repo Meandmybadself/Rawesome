@@ -74,7 +74,7 @@ export class WebGLRenderer {
   }
 
   private initPrograms(): void {
-    const geometryUniforms = ['u_texture', 'u_cropRect', 'u_rotation', 'u_flip', 'u_quarterTurns']
+    const geometryUniforms = ['u_texture', 'u_cropRect', 'u_rotation', 'u_flip', 'u_quarterTurns', 'u_rotAspect']
     this.geometryProgram = this.buildProgram(GEOMETRY_VERT, GEOMETRY_FRAG, geometryUniforms)
 
     const adjustmentUniforms = [
@@ -251,6 +251,13 @@ export class WebGLRenderer {
     gl.uniform1i(
       this.geometryProgram.uniforms.get('u_quarterTurns')!,
       params.crop.quarterTurns ?? 0,
+    )
+    // Aspect correction for fine rotation: makes rotation isotropic in screen pixels
+    const cropW = applyCrop ? params.crop.width : 1
+    const cropH = applyCrop ? params.crop.height : 1
+    gl.uniform1f(
+      this.geometryProgram.uniforms.get('u_rotAspect')!,
+      (w * cropH) / (h * cropW),
     )
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 

@@ -10,6 +10,7 @@ uniform vec4 u_cropRect;   // x, y, width, height in [0,1]
 uniform float u_rotation;  // fine rotation in radians
 uniform vec2 u_flip;       // x=flipH, y=flipV (0 or 1)
 uniform int u_quarterTurns; // 0-3: number of 90° CW rotations
+uniform float u_rotAspect;  // aspect correction for fine rotation (FBO w*cropH / h*cropW)
 
 void main() {
   vec2 uv = vec2(a_uv.x, 1.0 - a_uv.y);
@@ -27,16 +28,20 @@ void main() {
   // Apply crop
   uv = u_cropRect.xy + uv * u_cropRect.zw;
 
-  // Apply fine rotation around crop center
+  // Apply fine rotation around crop center (aspect-corrected)
+  // Rotation must be isotropic in screen pixels, not UV space.
+  // u_rotAspect converts UV offset to isotropic space before rotating.
   if (abs(u_rotation) > 0.0001) {
     vec2 center = u_cropRect.xy + u_cropRect.zw * 0.5;
     vec2 offset = uv - center;
+    offset.x *= u_rotAspect; // scale to isotropic pixel space
     float cosR = cos(-u_rotation);
     float sinR = sin(-u_rotation);
     offset = vec2(
       offset.x * cosR - offset.y * sinR,
       offset.x * sinR + offset.y * cosR
     );
+    offset.x /= u_rotAspect; // scale back to UV space
     uv = center + offset;
   }
 
