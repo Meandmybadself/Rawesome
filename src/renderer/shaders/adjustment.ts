@@ -58,90 +58,99 @@ vec3 linearToSRGBv(vec3 c) {
   return vec3(linearToSRGB(c.r), linearToSRGB(c.g), linearToSRGB(c.b));
 }
 
-// Attempt to preserve the color ratio when adjusting luminance.
-// Instead of adding a flat offset (which desaturates), scale RGB
-// so that the new luminance matches the target while keeping hue.
+// Luminance-preserving color adjustment (from Photopea's approach).
+// When brightening, blend toward white to avoid oversaturation.
+// When darkening, scale proportionally to preserve hue.
 vec3 adjustLuminance(vec3 c, float oldLum, float newLum) {
-  if (oldLum < 0.001) return vec3(newLum); // pure black → grey
-  return c * (newLum / oldLum);
+  if (oldLum < 0.0001) return vec3(newLum);
+  if (newLum > oldLum) {
+    // Brightening: blend toward white (prevents oversaturation)
+    float denom = max(1.0 - newLum, 0.001);
+    return c + (oldLum - newLum) / denom * (vec3(1.0) - c);
+  } else {
+    // Darkening: scale proportionally (preserves hue)
+    return c * (newLum / oldLum);
+  }
+}
+
+// Soft bell-curve mask centered at 'center' with width 'width'.
+// Returns 1.0 at center, fading to 0.0 at center ± width.
+float bellMask(float t, float center, float width) {
+  float d = (t - center) / width;
+  return exp(-d * d * 2.0);
 }
 
 vec3 applyContrast(vec3 c, float strength) {
   if (abs(strength) < 0.001) return c;
-  // S-curve contrast around 0.5 using a power function
-  // Positive = more contrast, negative = less
   float lum = luminance(c);
   float t = clamp(lum, 0.0, 1.0);
-  float newLum;
-  if (strength > 0.0) {
-    // Increase contrast: steepen around midpoint
-    float gamma = 1.0 / (1.0 + strength * 2.0);
-    newLum = t < 0.5
-      ? 0.5 * pow(2.0 * t, 1.0 / gamma)
-      : 1.0 - 0.5 * pow(2.0 * (1.0 - t), 1.0 / gamma);
-  } else {
-    // Decrease contrast: flatten
-    float gamma = 1.0 + abs(strength) * 2.0;
-    newLum = t < 0.5
-      ? 0.5 * pow(2.0 * t, 1.0 / gamma)
-      : 1.0 - 0.5 * pow(2.0 * (1.0 - t), 1.0 / gamma);
-  }
+  // S-curve via symmetric power function around 0.5
+  float power = strength > 0.0
+    ? 1.0 / (1.0 + strength * 2.0)
+    : 1.0 + abs(strength) * 2.0;
+  float newLum = t < 0.5
+    ? 0.5 * pow(2.0 * t, power)
+    : 1.0 - 0.5 * pow(2.0 * (1.0 - t), power);
   return clamp(adjustLuminance(c, lum, newLum), 0.0, 1.0);
 }
 
-// Highlights: compress or expand the upper tonal range.
-// In linear light, middle grey (~sRGB 0.5) is around 0.18–0.22.
-// "Bright" pixels in linear are roughly > 0.15.
-// Negative strength pulls bright values toward midtones.
-// Positive strength pushes them toward white.
+// Highlights: targets the upper tonal range using overlapping bell+ramp masks.
+// The mask is designed to affect everything above ~sRGB 0.5 with peak at the top.
 vec3 applyHighlights(vec3 c, float strength) {
   if (abs(strength) < 0.001) return c;
   float lum = luminance(c);
   float t = clamp(lum, 0.0, 1.0);
 
-  // Mask: targets the upper range, feathered.
-  // In linear light, 0.1 ≈ sRGB 0.35, 0.5 ≈ sRGB 0.74
-  float mask = smoothstep(0.1, 0.5, t);
+  // Perceptual t: work in a gamma-like space for more intuitive masking
+  float pt = sqrt(t);
 
-  // Scale the effect so it's stronger on brighter pixels
-  float weight = mask * t; // brighter pixels get more effect
+  // Broad ramp that covers the upper half of the tonal range
+  // pt=0.5 (≈sRGB 0.5) → 0.0, pt=1.0 → 1.0
+  float mask = smoothstep(0.4, 0.95, pt);
+
+  // Additional weight: stronger effect on brighter pixels
+  float weight = mask * mask;
 
   float targetLum;
   if (strength < 0.0) {
-    // Pull highlights down: blend toward a compressed value
-    // At strength=-1, t=0.9 → target ≈ 0.9 - 0.9*0.9*0.55 ≈ 0.455
-    targetLum = t + strength * weight * 0.55;
+    // Recovery: pull highlights down via soft-knee compression.
+    // Remap the bright range through a curve that bends high values down.
+    float amount = abs(strength);
+    // Blend toward a compressed curve: pow(t, 1+amount)
+    float compressed = pow(t, 1.0 + amount * 1.2);
+    targetLum = mix(t, compressed, weight);
   } else {
-    // Push highlights up: expand toward 1.0
-    targetLum = t + strength * mask * (1.0 - t) * 0.7;
+    // Boost: push highlights up toward 1.0
+    float headroom = 1.0 - t;
+    targetLum = t + strength * weight * headroom * 0.8;
   }
   targetLum = clamp(targetLum, 0.0, 1.0);
 
   return clamp(adjustLuminance(c, lum, targetLum), 0.0, 1.0);
 }
 
-// Shadows: lift or crush the lower tonal range.
-// Negative strength crushes darks deeper.
-// Positive strength lifts shadows to reveal detail.
+// Shadows: targets the lower tonal range.
+// Positive strength lifts shadows, negative crushes them.
 vec3 applyShadows(vec3 c, float strength) {
   if (abs(strength) < 0.001) return c;
   float lum = luminance(c);
   float t = clamp(lum, 0.0, 1.0);
 
-  // Mask: targets the lower range.
-  // In linear: 0.3 ≈ sRGB 0.58, 0.05 ≈ sRGB 0.24
-  float mask = 1.0 - smoothstep(0.0, 0.35, t);
+  // Work in perceptual space for more even effect distribution
+  float pt = sqrt(t);
+
+  // Broad ramp covering lower half: pt=0.0→1.0, pt=0.6→0.0
+  float mask = 1.0 - smoothstep(0.05, 0.6, pt);
 
   float targetLum;
   if (strength > 0.0) {
-    // Lift shadows: use a gamma curve to open up darks
-    // Higher exponent = more lift in deep shadows
-    float gamma = 1.0 / (1.0 + strength * 2.0);
+    // Lift: use a strong gamma curve and blend with mask
+    float gamma = 1.0 / (1.0 + strength * 3.0);
     float lifted = pow(t, gamma);
     targetLum = mix(t, lifted, mask);
   } else {
-    // Crush shadows: push darks deeper
-    float gamma = 1.0 + abs(strength) * 2.5;
+    // Crush: deepen shadows with a power curve
+    float gamma = 1.0 + abs(strength) * 3.0;
     float crushed = pow(t, gamma);
     targetLum = mix(t, crushed, mask);
   }
@@ -150,28 +159,39 @@ vec3 applyShadows(vec3 c, float strength) {
   return clamp(adjustLuminance(c, lum, targetLum), 0.0, 1.0);
 }
 
-// Whites: endpoint adjustment for the brightest pixels.
-// Narrower range than highlights.
+// Whites: narrow endpoint adjustment for the very brightest values.
 vec3 applyWhites(vec3 c, float strength) {
   if (abs(strength) < 0.001) return c;
   float lum = luminance(c);
   float t = clamp(lum, 0.0, 1.0);
-  // In linear: 0.4 ≈ sRGB 0.66, 0.8 ≈ sRGB 0.91
-  float mask = smoothstep(0.4, 0.8, t);
-  float targetLum = t + strength * mask * 0.4;
+  float pt = sqrt(t);
+  float mask = smoothstep(0.65, 0.95, pt);
+  float targetLum;
+  if (strength > 0.0) {
+    targetLum = t + strength * mask * (1.0 - t) * 0.9;
+  } else {
+    targetLum = t + strength * mask * t * 0.5;
+  }
   targetLum = clamp(targetLum, 0.0, 1.0);
   return clamp(adjustLuminance(c, lum, targetLum), 0.0, 1.0);
 }
 
-// Blacks: endpoint adjustment for the darkest pixels.
-// Narrower range than shadows.
+// Blacks: narrow endpoint adjustment for the darkest values.
 vec3 applyBlacks(vec3 c, float strength) {
   if (abs(strength) < 0.001) return c;
   float lum = luminance(c);
   float t = clamp(lum, 0.0, 1.0);
-  // In linear: 0.15 ≈ sRGB 0.42
-  float mask = 1.0 - smoothstep(0.0, 0.15, t);
-  float targetLum = t + strength * mask * 0.3;
+  float pt = sqrt(t);
+  float mask = 1.0 - smoothstep(0.0, 0.3, pt);
+  float targetLum;
+  if (strength < 0.0) {
+    // Crush blacks deeper
+    float gamma = 1.0 + abs(strength) * 4.0;
+    targetLum = mix(t, pow(t, gamma), mask);
+  } else {
+    // Lift blacks
+    targetLum = t + strength * mask * 0.3;
+  }
   targetLum = clamp(targetLum, 0.0, 1.0);
   return clamp(adjustLuminance(c, lum, targetLum), 0.0, 1.0);
 }
