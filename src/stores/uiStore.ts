@@ -10,9 +10,11 @@ interface UIState {
   isHistogramVisible: boolean
   decodeProgress: { phase: string; percent: number } | null
   exportProgress: { phase: string; percent: number } | null
+  straightenActive: boolean
   error: string | null
 
   setView: (view: AppView) => void
+  setStraightenActive: (active: boolean) => void
   setTheme: (theme: Theme) => void
   setActiveTool: (tool: ActiveTool) => void
   toggleExportPanel: () => void
@@ -32,9 +34,11 @@ export const useUIStore = create<UIState>()(
       isHistogramVisible: true,
       decodeProgress: null,
       exportProgress: null,
+      straightenActive: false,
       error: null,
 
       setView: (view) => set({ view }),
+      setStraightenActive: (straightenActive) => set({ straightenActive }),
       setTheme: (theme) => {
         document.documentElement.setAttribute('data-theme', theme)
         set({ theme })

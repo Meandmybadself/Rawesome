@@ -104,33 +104,97 @@ function CropControls() {
   const setParam = useEditStore((s) => s.setParam)
   const commitSnapshot = useEditStore((s) => s.commitSnapshot)
   const setActiveTool = useUIStore((s) => s.setActiveTool)
+  const straightenActive = useUIStore((s) => s.straightenActive)
+  const setStraightenActive = useUIStore((s) => s.setStraightenActive)
+
+  const rotateCW = () => {
+    setParam('crop', {
+      ...crop,
+      quarterTurns: ((crop.quarterTurns ?? 0) + 1) % 4,
+      x: 0, y: 0, width: 1, height: 1,
+    })
+    commitSnapshot()
+  }
+
+  const rotateCCW = () => {
+    setParam('crop', {
+      ...crop,
+      quarterTurns: ((crop.quarterTurns ?? 0) + 3) % 4,
+      x: 0, y: 0, width: 1, height: 1,
+    })
+    commitSnapshot()
+  }
 
   return (
     <div className="panel-section">
       <h3 className="panel-section__title">Crop & Rotate</h3>
       <button
         className="done-btn"
-        onClick={() => setActiveTool('adjust')}
+        onClick={() => {
+          setStraightenActive(false)
+          setActiveTool('adjust')
+        }}
       >
         Done
       </button>
-      <div className="slider">
-        <div className="slider__header">
-          <label className="slider__label">Rotation</label>
-          <span className="slider__value">{crop.angle.toFixed(1)}</span>
+
+      <div className="rotation-controls">
+        <div className="rotation-controls__row">
+          <button
+            className="rotation-controls__btn"
+            onClick={rotateCCW}
+            title="Rotate 90° counter-clockwise"
+            aria-label="Rotate 90° counter-clockwise"
+          >
+            ↶
+          </button>
+          <div className="rotation-controls__slider-group">
+            <input
+              type="range"
+              className="rotation-controls__slider"
+              min={-45}
+              max={45}
+              step={0.1}
+              value={crop.angle}
+              onInput={(e) => setParam('crop', { ...crop, angle: parseFloat((e.target as HTMLInputElement).value) })}
+              onPointerUp={commitSnapshot}
+              onDoubleClick={() => { setParam('crop', { ...crop, angle: 0 }); commitSnapshot() }}
+              aria-label="Fine rotation"
+            />
+            <input
+              type="number"
+              className="rotation-controls__input"
+              min={-45}
+              max={45}
+              step={0.1}
+              value={parseFloat(crop.angle.toFixed(1))}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value)
+                if (!isNaN(v)) {
+                  setParam('crop', { ...crop, angle: Math.max(-45, Math.min(45, v)) })
+                }
+              }}
+              onBlur={commitSnapshot}
+              aria-label="Rotation degrees"
+            />
+          </div>
+          <button
+            className="rotation-controls__btn"
+            onClick={rotateCW}
+            title="Rotate 90° clockwise"
+            aria-label="Rotate 90° clockwise"
+          >
+            ↷
+          </button>
         </div>
-        <input
-          type="range"
-          min={-45}
-          max={45}
-          step={0.1}
-          value={crop.angle}
-          onInput={(e) => setParam('crop', { ...crop, angle: parseFloat((e.target as HTMLInputElement).value) })}
-          onPointerUp={commitSnapshot}
-          onDoubleClick={() => { setParam('crop', { ...crop, angle: 0 }); commitSnapshot() }}
-          aria-label="Rotation"
-        />
+        <button
+          className={`straighten-btn ${straightenActive ? 'straighten-btn--active' : ''}`}
+          onClick={() => setStraightenActive(!straightenActive)}
+        >
+          Straighten
+        </button>
       </div>
+
       <button
         className="reset-btn"
         onClick={() => {
