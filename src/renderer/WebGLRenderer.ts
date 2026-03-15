@@ -1,6 +1,7 @@
 import { compileShader, createProgram, createTexture, createFramebuffer } from './glUtils'
 import { GEOMETRY_VERT, GEOMETRY_FRAG } from './shaders/geometry'
 import { ADJUSTMENT_VERT, ADJUSTMENT_FRAG } from './shaders/adjustment'
+import { LUT_FRAG } from './shaders/lut'
 import { temperatureToMatrix } from './whiteBalance'
 import type { EditParams } from '../types'
 
@@ -35,11 +36,15 @@ export class WebGLRenderer {
   private geometryProgram!: ProgramInfo
   private adjustmentProgram!: ProgramInfo
   private blitProgram!: ProgramInfo
+  private lutProgram!: ProgramInfo
 
   private sourceTexture: WebGLTexture | null = null
   private previewTexture: WebGLTexture | null = null
   private geometryFBO: { fbo: WebGLFramebuffer; texture: WebGLTexture; width: number; height: number } | null = null
   private adjustmentFBO: { fbo: WebGLFramebuffer; texture: WebGLTexture; width: number; height: number } | null = null
+  private lutFBO: { fbo: WebGLFramebuffer; texture: WebGLTexture; width: number; height: number } | null = null
+  private lutTextureCache = new Map<string, WebGLTexture>()
+  private activeLutTexture: WebGLTexture | null = null
 
   private fullWidth = 0
   private fullHeight = 0
@@ -85,6 +90,9 @@ export class WebGLRenderer {
     this.adjustmentProgram = this.buildProgram(ADJUSTMENT_VERT, ADJUSTMENT_FRAG, adjustmentUniforms)
 
     this.blitProgram = this.buildProgram(ADJUSTMENT_VERT, BLIT_FRAG, ['u_texture'])
+
+    const lutUniforms = ['u_texture', 'u_lut', 'u_strength']
+    this.lutProgram = this.buildProgram(ADJUSTMENT_VERT, LUT_FRAG, lutUniforms)
   }
 
   private buildProgram(vert: string, frag: string, uniformNames: string[]): ProgramInfo {
@@ -114,7 +122,7 @@ export class WebGLRenderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, buf)
     gl.bufferData(gl.ARRAY_BUFFER, quadData, gl.STATIC_DRAW)
 
-    for (const info of [this.geometryProgram, this.adjustmentProgram, this.blitProgram]) {
+    for (const info of [this.geometryProgram, this.adjustmentProgram, this.blitProgram, this.lutProgram]) {
       gl.bindVertexArray(info.vao)
       gl.bindBuffer(gl.ARRAY_BUFFER, buf)
       gl.enableVertexAttribArray(0)
@@ -175,6 +183,10 @@ export class WebGLRenderer {
     return dst
   }
 
+  private clearExportLutFBO(): void {
+    this.lutFBO = null
+  }
+
   private allocateWorkFBOs(w: number, h: number): void {
     const gl = this.gl
     if (this.geometryFBO) {
@@ -187,6 +199,26 @@ export class WebGLRenderer {
     }
     this.geometryFBO = createFramebuffer(gl, w, h)
     this.adjustmentFBO = createFramebuffer(gl, w, h)
+  }
+
+  async loadLut(presetId: string, url: string): Promise<void> {
+    if (this.lutTextureCache.has(presetId)) {
+      this.activeLutTexture = this.lutTextureCache.get(presetId)!
+      this.scheduleRender()
+      return
+    }
+    const { loadHaldCLUT, createLutTexture } = await import('./lutLoader')
+    const data = await loadHaldCLUT(url)
+    const size = Math.round(Math.pow(data.length / 3, 1 / 3))
+    const tex = createLutTexture(this.gl, data, size)
+    this.lutTextureCache.set(presetId, tex)
+    this.activeLutTexture = tex
+    this.scheduleRender()
+  }
+
+  clearLut(): void {
+    this.activeLutTexture = null
+    this.scheduleRender()
   }
 
   setParams(params: EditParams): void {
@@ -287,28 +319,66 @@ export class WebGLRenderer {
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
+    // Pass 3: LUT (film simulation) — only if a LUT is active
+    const filmStrength = (params.film?.presetId && this.activeLutTexture)
+      ? (params.film.strength ?? 100) / 100
+      : 0
+
+    let blitSource = this.adjustmentFBO!.texture
+
+    if (filmStrength > 0 && this.activeLutTexture) {
+      // Ensure LUT FBO matches dimensions
+      if (!this.lutFBO || this.lutFBO.width !== w || this.lutFBO.height !== h) {
+        if (this.lutFBO) {
+          gl.deleteFramebuffer(this.lutFBO.fbo)
+          gl.deleteTexture(this.lutFBO.texture)
+        }
+        this.lutFBO = createFramebuffer(gl, w, h)
+      }
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.lutFBO.fbo)
+      gl.viewport(0, 0, w, h)
+      gl.useProgram(this.lutProgram.program)
+      gl.bindVertexArray(this.lutProgram.vao)
+
+      gl.activeTexture(gl.TEXTURE0)
+      gl.bindTexture(gl.TEXTURE_2D, this.adjustmentFBO!.texture)
+      gl.uniform1i(this.lutProgram.uniforms.get('u_texture')!, 0)
+
+      gl.activeTexture(gl.TEXTURE1)
+      gl.bindTexture(gl.TEXTURE_3D, this.activeLutTexture)
+      gl.uniform1i(this.lutProgram.uniforms.get('u_lut')!, 1)
+
+      gl.uniform1f(this.lutProgram.uniforms.get('u_strength')!, filmStrength)
+
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+
+      blitSource = this.lutFBO.texture
+    }
+
     // Draw to canvas via quad (blitFramebuffer float→RGBA8 is not cross-browser)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
     gl.viewport(0, 0, this.canvas.width, this.canvas.height)
     gl.useProgram(this.blitProgram.program)
     gl.bindVertexArray(this.blitProgram.vao)
     gl.activeTexture(gl.TEXTURE0)
-    gl.bindTexture(gl.TEXTURE_2D, this.adjustmentFBO!.texture)
+    gl.bindTexture(gl.TEXTURE_2D, blitSource)
     gl.uniform1i(this.blitProgram.uniforms.get('u_texture')!, 0)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
   }
 
   getHistogram(): HistogramData {
     const gl = this.gl
-    if (!this.adjustmentFBO) {
+    const sourceFBO = (this.activeLutTexture && this.lutFBO) ? this.lutFBO : this.adjustmentFBO
+    if (!sourceFBO) {
       return { r: new Uint32Array(256), g: new Uint32Array(256), b: new Uint32Array(256), luma: new Uint32Array(256) }
     }
 
-    const w = this.adjustmentFBO.width
-    const h = this.adjustmentFBO.height
+    const w = sourceFBO.width
+    const h = sourceFBO.height
     const pixels = new Float32Array(w * h * 4)
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.adjustmentFBO.fbo)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sourceFBO.fbo)
     gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, pixels)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 
@@ -349,14 +419,18 @@ export class WebGLRenderer {
     // Save current FBOs
     const prevGeo = this.geometryFBO
     const prevAdj = this.adjustmentFBO
+    const prevLut = this.lutFBO
     this.geometryFBO = geoFBO
     this.adjustmentFBO = adjFBO
+    this.clearExportLutFBO()  // sets lutFBO to null for fresh allocation by renderPipeline
 
     this.renderPipeline(this.sourceTexture, outW, outH, params)
 
-    // Readback
+    // Readback from the correct FBO (LUT if active, otherwise adjustment)
+    const exportLutFBO = this.lutFBO
+    const readFBO = (this.activeLutTexture && exportLutFBO) ? exportLutFBO : adjFBO
     const pixels = new Float32Array(outW * outH * 4)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, adjFBO.fbo)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, readFBO.fbo)
     gl.readPixels(0, 0, outW, outH, gl.RGBA, gl.FLOAT, pixels)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 
@@ -365,10 +439,16 @@ export class WebGLRenderer {
     gl.deleteTexture(geoFBO.texture)
     gl.deleteFramebuffer(adjFBO.fbo)
     gl.deleteTexture(adjFBO.texture)
+    // Clean up LUT FBO if allocated during export
+    if (exportLutFBO) {
+      gl.deleteFramebuffer(exportLutFBO.fbo)
+      gl.deleteTexture(exportLutFBO.texture)
+    }
 
     // Restore
     this.geometryFBO = prevGeo
     this.adjustmentFBO = prevAdj
+    this.lutFBO = prevLut
 
     // Convert RGBA to RGB and flip vertically
     const rgb = new Float32Array(outW * outH * 3)
@@ -412,8 +492,16 @@ export class WebGLRenderer {
       gl.deleteFramebuffer(this.adjustmentFBO.fbo)
       gl.deleteTexture(this.adjustmentFBO.texture)
     }
+    if (this.lutFBO) {
+      gl.deleteFramebuffer(this.lutFBO.fbo)
+      gl.deleteTexture(this.lutFBO.texture)
+    }
+    for (const tex of this.lutTextureCache.values()) {
+      gl.deleteTexture(tex)
+    }
     gl.deleteProgram(this.geometryProgram.program)
     gl.deleteProgram(this.adjustmentProgram.program)
     gl.deleteProgram(this.blitProgram.program)
+    gl.deleteProgram(this.lutProgram.program)
   }
 }

@@ -13,6 +13,10 @@ export interface EditParams {
   vibrance: number       // -100 to +100
   saturation: number     // -100 to +100
   crop: CropRect
+  film?: {
+    presetId: string | null
+    strength: number
+  }
 }
 
 export interface CropRect {
@@ -37,6 +41,7 @@ export const DEFAULT_EDIT_PARAMS: EditParams = {
   vibrance: 0,
   saturation: 0,
   crop: { x: 0, y: 0, width: 1, height: 1, angle: 0, quarterTurns: 0 },
+  film: { presetId: null, strength: 100 },
 }
 
 // ─── File Registry ────────────────────────────────────────────────────────────
@@ -57,7 +62,7 @@ export interface CatalogEntry {
 // ─── UI ───────────────────────────────────────────────────────────────────────
 
 export type AppView = 'library' | 'edit'
-export type ActiveTool = 'adjust' | 'crop'
+export type ActiveTool = 'adjust' | 'crop' | 'film'
 export type Theme = 'dark' | 'light'
 
 // ─── White Balance Presets ────────────────────────────────────────────────────
@@ -71,12 +76,20 @@ export interface WBPreset {
 // ─── Slider Config ────────────────────────────────────────────────────────────
 
 export interface SliderConfig {
-  key: keyof Omit<EditParams, 'crop'>
+  key: keyof Omit<EditParams, 'crop' | 'film'>
   label: string
   min: number
   max: number
   step: number
   defaultValue: number
+}
+
+export interface FilmPreset {
+  id: string
+  name: string
+  category: string
+  bundled: boolean
+  lutUrl: string
 }
 
 // ─── RAW Metadata ─────────────────────────────────────────────────────────────
