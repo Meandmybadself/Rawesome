@@ -14,7 +14,7 @@ export function ThumbnailGrid({ entries, onOpen, onDelete }: ThumbnailGridProps)
     return (
       <div className="thumbnail-grid__empty">
         <div className="thumbnail-grid__hero">
-          <h1 className="thumbnail-grid__title">Raw Dog</h1>
+          <h1 className="thumbnail-grid__title">Rawesome</h1>
           <p className="thumbnail-grid__tagline">
             A browser-based RAW photo editor. No uploads, no accounts, no server — your photos never leave your machine.
           </p>

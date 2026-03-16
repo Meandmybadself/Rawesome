@@ -1,4 +1,4 @@
-# Raw Dog - Development Guide
+# Rawesome - Development Guide
 
 ## Build & Run
 
@@ -49,4 +49,4 @@ Note: `tsconfig.app.json` has `erasableSyntaxOnly: true` — don't use parameter
 
 ## Deployment
 
-Push to `main` triggers GitHub Actions → builds → deploys to GitHub Pages at `rawdog.meandmybadself.com`.
+Push to `main` triggers GitHub Actions → builds → deploys to GitHub Pages at `rawesome.meandmybadself.com`.

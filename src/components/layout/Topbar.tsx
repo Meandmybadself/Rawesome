@@ -11,7 +11,7 @@ export function Topbar() {
   return (
     <header className="topbar">
       <div className="topbar__left">
-        <h1 className="topbar__title" onClick={() => setView('library')}>Raw Dog</h1>
+        <h1 className="topbar__title" onClick={() => setView('library')}>Rawesome</h1>
         {view === 'edit' && (
           <button className="topbar__back" onClick={() => setView('library')}>
             &larr; Library

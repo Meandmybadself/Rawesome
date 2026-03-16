@@ -1,4 +1,4 @@
-# Raw Dog
+# Rawesome
 
 A browser-based RAW photo editor built with WebGL2, React, and WebAssembly.
 
