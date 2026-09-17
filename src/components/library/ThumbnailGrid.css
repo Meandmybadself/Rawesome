@@ -89,6 +89,22 @@
   color: var(--color-accent);
 }
 
+.thumbnail-grid__credit {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-disabled);
+  margin: 0;
+}
+
+.thumbnail-grid__credit a {
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  transition: color var(--transition-fast);
+}
+
+.thumbnail-grid__credit a:hover {
+  color: var(--color-accent);
+}
+
 @media (max-width: 520px) {
   .thumbnail-grid__features {
     grid-template-columns: 1fr;

@@ -46,6 +46,10 @@ export function ThumbnailGrid({ entries, onOpen, onDelete }: ThumbnailGridProps)
         <p className="thumbnail-grid__cta">
           Drag and drop RAW files or click <strong>Import RAW Files</strong> to get started.
         </p>
+
+        <p className="thumbnail-grid__credit">
+          Made by <a href="https://meandmybadself.com" target="_blank" rel="noopener noreferrer">meandmybadself.com</a>
+        </p>
       </div>
     )
   }
